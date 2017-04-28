@@ -1,0 +1,203 @@
+\documentclass{article}
+\usepackage[a4paper,margin=0.8in]{geometry}
+
+\usepackage{amssymb,amsmath,amsthm}
+\usepackage{latexsym}
+\usepackage{url}
+\usepackage{hyperref}
+
+%% uses the AMS Euler math font.
+\usepackage{euler}
+
+%% Put space between paragraphs rather than indenting.
+%% \usepackage{parskip}
+
+%% \setlength{\parindent}{0pt}
+%% \setlength{\parskip}{0.6em}
+
+%% %% for coloneqq
+%% \usepackage{mathtools}
+
+%% %% for \underaccent
+%% \usepackage{accents}
+
+%% % for semantic brackets
+%% \usepackage{stmaryrd}
+
+%% % for inference rules
+%% \usepackage{proof}
+
+%% %% for mathpar environment
+%% \usepackage{mathpartir}
+
+%% % for \scalebox, \rotatebox
+%% \usepackage{graphicx}
+
+%% for colors
+%% must be loaded before tikz in order for options to take effect :/
+\usepackage[dvipsnames]{xcolor}
+
+%% \usepackage{tikz}
+%% \usepackage{tikz-cd}
+
+
+\newcommand{\fa}[1]{\forall\,{#1}.\ }
+\newcommand{\te}[1]{\exists\,{#1}.\ }
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\ms}[1]{\ensuremath{\textsf{#1}}}
+\newcommand{\setof}[2]{\{{#1}~|~{#2}\}}
+
+\newcommand{\todo}[1]{{\color{red}{#1}}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{nontheorem}{Non-theorem}
+\newenvironment{refutation}
+  {\vspace{0.5em}\noindent\textit{Refutation.}}
+  {\hfill$\square$\vspace{0.5em}}
+
+
+\begin{document}
+
+\title{Consistency as Monotonicity}
+\author{Michael Arntzenius}
+\date{}
+\maketitle
+
+
+\section{Abstract}
+
+We sketch a very general model of concurrent computation: a set of functions
+iteratively applied in a nondeterministic order. By imposing some restrictions,
+most importantly monotonicity, we ensure eventual consistency or determinism.
+
+
+\section{Less abstract}
+
+A program $P$ is a set of monotone maps on a poset $S$ of program states with a
+least element (initial state) $\bot$. A state is ``fixed'' if it is a fixed
+point of every function in $P$. A scheduling of a program is an infinite
+sequence of elements of $P$. A scheduling is fair if it visits every $f \in P$
+infinitely often. I show that a program either:
+
+\begin{enumerate}
+\item Diverges: no scheduling reaches a fixed state.
+\item Converges: every fair scheduling reaches the same fixed state.
+\end{enumerate}
+
+
+\section{Definitions}
+
+Fix $S$, a partially ordered set with a least element $\bot$.
+
+We write $\vec{s} : P$ to indicate a finite sequence $\vec{s}$ such that $\fa{i} s_i \in P$.
+
+\newcommand{\seq}[1]{{\vec{#1}_*}}
+
+Given a sequence $\vec{f} = f_0, ..., f_n$, let $\seq{f} = f_n \circ f_{n-1}
+\circ ... \circ f_1 \circ f_0$.
+
+Consider sets $P,Q$ of monotone maps $S \to S$. Preorder such sets by:
+\[
+\begin{array}{ccccc}
+P \le Q
+&\text{iff}& \fa{f \in P} \te{\vec{s} : Q} f \le \seq{s}
+&\text{or equivalently}& \fa{\vec{s} : P} \te{\vec{t} : Q}
+{\seq{s} \le \seq{t}}\\
+P \simeq Q &\text{iff}& P \le Q \wedge Q \le P
+\end{array}
+\]
+
+\todo{Could I instead (or additionally) consider sets closed under composition
+  and identity? Hm...}
+
+\newcommand{\prefix}[1]{\ensuremath{\text{prefix}(#1)}}
+\newcommand{\fixed}[1]{\ensuremath{\text{fixed}(#1)}}
+\newcommand{\reach}[1]{\ensuremath{\text{reachable}(#1)}}
+
+Let $\reach{P} = \setof{x \in S}{\te{\vec{s} : P} x = \seq{s}\; \bot}$. Call
+these the reachable points of $P$.
+
+Let $\prefix{P} = \setof{x \in S}{\fa{f \in P} f\; x \le x}$. Call these the prefix points of $P$.
+
+Let $\fixed{P} = \setof{x \in S}{\fa{f \in P} f\;x = x}$. Call these the fixed
+points of $P$. Note that all fixed points are prefix points.
+
+
+\section{Theorems}
+
+Initially, I conjectured the following:
+
+\begin{nontheorem}
+  If $P \simeq Q$ then $\fixed{P} = \fixed{Q}$.
+\end{nontheorem}
+
+However, this is false:
+
+\begin{refutation}
+  Let $S = \N$ ordered $0 < 1 < 2 < ...$. Let $P = \{id\}$. Let $Q = \{id, (x
+  \mapsto x - 1)\}$, where $0 - 1 = 0$. Then $P \simeq Q$; the only interesting
+  case is $(x \mapsto x - 1) \le id$. Yet $\fixed{P} = \N$, but $\fixed{Q} =
+  \{0\}$.
+\end{refutation}
+
+The idea of prefix points as a useful generalization of fixed points was
+introduced to me by Paul Blain Levy. Prefix points turn out to solve this
+problem:
+
+\begin{theorem}
+  A least prefix point is a least fixed point.
+\end{theorem}
+
+\begin{proof}
+  Since all fixed points are prefix points, a least prefix point is less than
+  all fixed points. So it suffices to show that a least prefix point is a fixed
+  point.
+
+  Let $x$ be a least prefix point. Consider any $f \in P$. We wish to show $f\;x
+  = x$. We have $f\; x \le x$. We will show that $f\;x$ is also a prefix point.
+  From this, since $x$ is the least prefix point, we have $x \le f\;x$ and
+  therefore $x = f\;x$.
+
+  Consider any $g \in P$. We wish to show that $g\;(f\;x) \le f\; x$. We have
+  $f\;x \le x$. Monotonically, $g\;(f\;x) \le g\;x$. Since $x$ is a prefix
+  point, $g\;x \le x$. Transitively, $g\;(f\;x) \le x$ as desired.
+\end{proof}
+
+\begin{theorem}
+  If $P \le Q$ then $\prefix{P} \supseteq \prefix{Q}$.
+\end{theorem}
+
+\begin{proof}
+  Let $x \in \prefix{Q}$ and $f \in P$. We wish to show $f\;x \le x$. By $P \le
+  Q$ we have $f \le \seq{s}$ for some $\vec{s} : Q$. So $f\;x \le \seq{s}\;x$.
+  Since $x \in \prefix{Q}$, $\seq{s}\;x \le x$. So $f\; x \le x$.
+\end{proof}
+
+\begin{corollary}
+  If $P \simeq Q$, then $\prefix{P} = \prefix{Q}$.
+\end{corollary}
+
+\begin{theorem}
+  If $x \in \reach{P}$ and $y \in \prefix{P}$ then $x \le y$.
+\end{theorem}
+
+\begin{proof}
+  Since $x$ is reachable, $x = \seq{s}\; \bot$. Induct on $\vec{s}$. Base case:
+  $\bot \le y$. Inductive hypothesis: $\seq{t}\; \bot \le y$. To show
+  inductively: $f\; (\seq{t}\; \bot) \le y$ for $f \in P$. By our IH and
+  monotonicity of $f$, $f\;(\seq{t}\; \bot) \le f\; y$. By $y \in \prefix{P}$,
+  $f\;y \le y$. Transitively $f\; (\seq{t}\; \bot) \le y$ as desired.
+\end{proof}
+
+\begin{corollary}
+  A reachable prefix point is the least fixed point.
+\end{corollary}
+
+\begin{corollary}
+  All reachable fixed points are equal; there is either a unique reachable
+  fixed point, or no reachable fixed points.
+\end{corollary}
+
+\end{document}
