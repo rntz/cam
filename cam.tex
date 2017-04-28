@@ -124,6 +124,14 @@ Let $\prefix{P} = \setof{x \in S}{\fa{f \in P} f\; x \le x}$. Call these the pre
 Let $\fixed{P} = \setof{x \in S}{\fa{f \in P} f\;x = x}$. Call these the fixed
 points of $P$. Note that all fixed points are prefix points.
 
+\newcommand{\eval}{\Downarrow}
+\newcommand{\diverge}{\not\eval}
+
+Write $P \eval x$ (``$P$ evaluates to $x$'') for $x \in \reach{P} \cap
+\prefix{P}$.
+
+Write $P \diverge$ (``$P$ diverges'') for $\reach{P} \cap \prefix{P} = \emptyset$.
+
 
 \section{Theorems}
 
@@ -147,6 +155,27 @@ introduced to me by Paul Blain Levy. Prefix points turn out to solve this
 problem:
 
 \begin{theorem}
+  If $P \le Q$ then $\prefix{Q} \subseteq \prefix{P}$.
+  \label{thm:prefix-antitone}
+\end{theorem}
+
+\begin{proof}
+  Let $x \in \prefix{Q}$ and $f \in P$. We wish to show $f\;x \le x$. By $P \le
+  Q$ we have $f \le \seq{s}$ for some $\vec{s} : Q$. So $f\;x \le \seq{s}\;x$.
+  Since $x \in \prefix{Q}$, $\seq{s}\;x \le x$. So $f\; x \le x$.
+\end{proof}
+
+\todo{Maybe the ordering on programs is the opposite of what it should be?}
+
+\begin{corollary}
+  If $P \simeq Q$, then $\prefix{P} = \prefix{Q}$.
+  \label{cor:simeq->prefix}
+\end{corollary}
+
+This is interesting, but isn't it fixed points we really care about? As it turns
+out, there is a powerful connection between prefix points and fixed points:
+
+\begin{theorem}
   A least prefix point is a least fixed point.
 \end{theorem}
 
@@ -158,29 +187,18 @@ problem:
   Let $x$ be a least prefix point. Consider any $f \in P$. We wish to show $f\;x
   = x$. We have $f\; x \le x$. We will show that $f\;x$ is also a prefix point.
   From this, since $x$ is the least prefix point, we have $x \le f\;x$ and
-  therefore $x = f\;x$.
+  therefore $f\;x = x$.
 
   Consider any $g \in P$. We wish to show that $g\;(f\;x) \le f\; x$. We have
   $f\;x \le x$. Monotonically, $g\;(f\;x) \le g\;x$. Since $x$ is a prefix
   point, $g\;x \le x$. Transitively, $g\;(f\;x) \le x$ as desired.
 \end{proof}
 
-\begin{theorem}
-  If $P \le Q$ then $\prefix{P} \supseteq \prefix{Q}$.
-\end{theorem}
-
-\begin{proof}
-  Let $x \in \prefix{Q}$ and $f \in P$. We wish to show $f\;x \le x$. By $P \le
-  Q$ we have $f \le \seq{s}$ for some $\vec{s} : Q$. So $f\;x \le \seq{s}\;x$.
-  Since $x \in \prefix{Q}$, $\seq{s}\;x \le x$. So $f\; x \le x$.
-\end{proof}
-
-\begin{corollary}
-  If $P \simeq Q$, then $\prefix{P} = \prefix{Q}$.
-\end{corollary}
+Now we consider the interaction of reachability and prefix-ness:
 
 \begin{theorem}
   If $x \in \reach{P}$ and $y \in \prefix{P}$ then $x \le y$.
+  \label{thm:reachable<=prefix}
 \end{theorem}
 
 \begin{proof}
@@ -192,12 +210,28 @@ problem:
 \end{proof}
 
 \begin{corollary}
-  A reachable prefix point is the least fixed point.
+  If $P \eval x$ then $x$ is the least fixed point of $P$.
 \end{corollary}
 
-\begin{corollary}
-  All reachable fixed points are equal; there is either a unique reachable
-  fixed point, or no reachable fixed points.
+\begin{corollary}[Consistency]
+  If $P \eval x$ and $P \eval y$ then $x = y$.
 \end{corollary}
+
+\todo{Couldn't I prove a more traditional ``confluence'' theorem as well?}
+
+\begin{theorem}[Equivalence]
+  If $P \simeq Q$ and $P \eval x$ then $Q \eval x$.
+\end{theorem}
+
+\begin{proof}
+  Since $x \in \prefix{P}$ and $Q \le P$, by Theorem \ref{thm:prefix-antitone}
+  we know $x \in \prefix{Q}$. So it suffices to show that $x \in \reach{Q}$.
+
+  $x = \seq{s}\;\bot$ for some $\vec{s} : P$. So by $P \le Q$ there is some
+  $\vec{t} : Q$ such that $\seq{s} \le \seq{t}$ and so $x = \seq{s}\; \bot \le
+  \seq{t}\;\bot$. Since $\seq{t}\;\bot \in \reach{Q}$ and $x \in \prefix{Q}$, by
+  Theorem \ref{thm:reachable<=prefix} we have $\seq{t}\;\bot \le x$. By
+  antisymmetry $x = \seq{t}\;\bot$ and is thus reachable in $Q$.
+\end{proof}
 
 \end{document}
