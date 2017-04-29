@@ -78,12 +78,12 @@ importantly monotonicity, suffice to ensure eventual consistency or determinism.
 \section{Less abstract}
 \label{sec:less-abstract}
 
-A program $P$ is a set of monotone maps on a poset $S$ of program states
-with a least element (initial state) $\bot$. A state is ``fixed'' if it is a
-fixed point of every function in $P$. A schedule is an infinite sequence of
-elements of $P$. A schedule is fair if it visits every $f \in P$ infinitely
-often. A schedule terminates if it has a prefix that reaches a fixed state. I
-show that a program either:
+A program $P$ is a set of monotone maps on a poset $S$ of program states with a
+least element (initial state) $\bot$. A state is ``fixed'' if it is a fixed
+point of every function in $P$. A schedule is an infinite sequence of elements
+of $P$. A schedule is fair if it visits every $f \in P$ infinitely often. A
+schedule terminates if it has a prefix that reaches a fixed state. I \todo{hope
+  to} show that a program either:
 
 \begin{enumerate}
 \item Diverges: no schedules terminate.
