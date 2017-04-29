@@ -6,6 +6,8 @@
 \usepackage{url}
 \usepackage{hyperref}
 
+\usepackage{multirow}
+
 %% uses the AMS Euler math font.
 \usepackage{euler}
 
@@ -68,20 +70,20 @@
 
 \section{Abstract}
 
-We sketch a very general model of concurrent computation: a set of functions
-iteratively applied in a nondeterministic order. By imposing some restrictions,
-most importantly monotonicity, we ensure eventual consistency or determinism.
+I sketch a very general model of concurrent computation: a set of functions
+iteratively applied in a nondeterministic order. A few simple restrictions, most
+importantly monotonicity, suffice to ensure eventual consistency or determinism.
 
 
 \section{Less abstract}
 \label{sec:less-abstract}
 
-A program $P$ is a set of monotone maps on a poset $S$ of program states with a
-least element (initial state) $\bot$. A state is ``fixed'' if it is a fixed
-point of every function in $P$. A schedule is an infinite sequence of elements
-of $P$. A schedule is fair if it visits every $f \in P$ infinitely often. A
-schedule terminates if it has a prefix that reaches a fixed state. I show that a
-program either:
+A program $P$ is a set of monotone maps on a poset $S$ of program states
+with a least element (initial state) $\bot$. A state is ``fixed'' if it is a
+fixed point of every function in $P$. A schedule is an infinite sequence of
+elements of $P$. A schedule is fair if it visits every $f \in P$ infinitely
+often. A schedule terminates if it has a prefix that reaches a fixed state. I
+show that a program either:
 
 \begin{enumerate}
 \item Diverges: no schedules terminate.
@@ -113,9 +115,10 @@ the current labels of its in-edges. Then simultaneously update each out-edge of 
 
 Fix $S$, a partially ordered set with a least element $\bot$.
 
-We write $\vec{s} : P$ to indicate a finite sequence $\vec{s}$ such that $\fa{i} s_i \in P$.
+$\vec{s} : P$ means $\vec{s}$ is a finite sequence such that $\fa{i} s_i \in P$.
 
-\newcommand{\seq}[1]{{\vec{#1}_*}}
+%% \newcommand{\seq}[1]{{\vec{#1}_*}}
+\newcommand{\seq}[1]{{\bullet\vec{#1}}}
 
 Given a sequence $\vec{f} = f_0, ..., f_n$, let $\seq{f} = f_n \circ f_{n-1}
 \circ ... \circ f_1 \circ f_0$.
@@ -134,25 +137,35 @@ P \simeq Q &\text{iff}& P \le Q \wedge Q \le P
 \todo{Could I instead (or additionally) consider sets closed under composition
   and identity? Hm...}
 
-\newcommand{\prefix}[1]{\ensuremath{\text{prefix}(#1)}}
-\newcommand{\fixed}[1]{\ensuremath{\text{fixed}(#1)}}
-\newcommand{\reach}[1]{\ensuremath{\text{reachable}(#1)}}
+\newcommand{\dec}[1]{\ensuremath{{#1}_{\text{dec}}}}
+\newcommand{\inc}[1]{\ensuremath{{#1}_{\text{inc}}}}
+\newcommand{\fixed}[1]{\ensuremath{{#1}_{\text{fix}}}}
+\newcommand{\reach}[1]{\ensuremath{{#1}_{\text{reach}}}}
+%% I'm not sure what the * in newcommand* does.
+\newcommand*{\defeq}{\stackrel{\text{def}}{=}}
 
-Let $\reach{P} = \setof{x \in S}{\te{\vec{s} : P} x = \seq{s}\; \bot}$. Call
-these the reachable points of $P$.
+Given a program $P$, we define the following subsets of $S$:
+\[
+\begin{array}{ccccc}
+  x \in \reach{P}
+  &\multirow{4}{*}{\text{iff}}& \te{\vec{s} : P} x = \seq{s}\;\bot
+  &\multirow{4}{*}{which is read}&\text{``$x$ is reachable''}\\
+  x \in \dec{P} && \fa{f \in P}{f\;x \le x} && \text{``$x$ is decreasing''}\\
+  x \in \inc{P} && \fa{f \in P}{f\;x \ge x} && \text{``$x$ is increasing''}\\
+  x \in \fixed{P} && \fa{f \in P}{f\;x = x} && \text{``$x$ is fixed''}
+\end{array}
+\]
 
-Let $\prefix{P} = \setof{x \in S}{\fa{f \in P} f\; x \le x}$. Call these the prefix points of $P$.
+\todo{Do we need to consider increasing points?}
 
-Let $\fixed{P} = \setof{x \in S}{\fa{f \in P} f\;x = x}$. Call these the fixed
-points of $P$. Note that all fixed points are prefix points.
+Note that $\fixed{P} = \dec{P} \cap \inc{P}$.
 
 \newcommand{\eval}{\Downarrow}
 \newcommand{\diverge}{\not\eval}
 
-Write $P \eval x$ (``$P$ evaluates to $x$'') for $x \in \reach{P} \cap
-\prefix{P}$.
+Write $P \eval x$ (``$P$ evaluates to $x$'') for $x \in \reach{P} \cap \dec{P}$.
 
-Write $P \diverge$ (``$P$ diverges'') for $\reach{P} \cap \prefix{P} = \emptyset$.
+Write $P \diverge$ (``$P$ diverges'') for $\reach{P} \cap \dec{P} = \emptyset$.
 
 
 \section{Proofs}
@@ -172,63 +185,64 @@ However, this is false:
   \{0\}$.
 \end{refutation}
 
-The idea of prefix points as a useful generalization of fixed points was
-introduced to me by Paul Blain Levy. Prefix points turn out to solve this
-problem:
+The idea of decreasing points (aka ``prefix points'') as a generalization of
+fixed points was introduced to me by Paul Blain Levy. Decreasing points solve
+this problem:
 
 \begin{theorem}
-  If $P \le Q$ then $\prefix{Q} \subseteq \prefix{P}$.
-  \label{thm:prefix-antitone}
+  If $P \le Q$ then $\dec{Q} \subseteq \dec{P}$.
+  \label{thm:dec-antitone}
 \end{theorem}
 
 \begin{proof}
-  Let $x \in \prefix{Q}$ and $f \in P$. We wish to show $f\;x \le x$. By $P \le
-  Q$ we have $f \le \seq{s}$ for some $\vec{s} : Q$. So $f\;x \le \seq{s}\;x$.
-  Since $x \in \prefix{Q}$, $\seq{s}\;x \le x$. So $f\; x \le x$.
+  Assume $x \in \dec{Q}$ and $f \in P$. We wish to show $f\;x \le x$. By $P
+  \le Q$ we have $f \le \seq{s}$ for some $\vec{s} : Q$. So $f\;x \le
+  \seq{s}\;x$. Since $x \in \dec{Q}$, $\seq{s}\;x \le x$. So $f\; x \le x$.
 \end{proof}
 
 \todo{Maybe the ordering on programs is the opposite of what it should be?}
 
 \begin{corollary}
-  If $P \simeq Q$, then $\prefix{P} = \prefix{Q}$.
-  \label{cor:simeq->prefix}
+  If $P \simeq Q$, then $\dec{P} = \dec{Q}$.
+  \label{cor:simeq->dec}
 \end{corollary}
 
 This is interesting, but isn't it fixed points we really care about? As it turns
-out, there is a powerful connection between prefix points and fixed points:
+out, there is a powerful connection between decreasing points and fixed points:
 
 \begin{theorem}
-  A least prefix point is a least fixed point.
+  A least decreasing point is a least fixed point.
 \end{theorem}
 
 \begin{proof}
-  Since all fixed points are prefix points, a least prefix point is less than
-  all fixed points. So it suffices to show that a least prefix point is a fixed
-  point.
+  Since all fixed points are decreasing points, a least decreasing point is less
+  than all fixed points. So it suffices to show that a least decreasing point is
+  a fixed point.
 
-  Let $x$ be a least prefix point. Consider any $f \in P$. We wish to show $f\;x
-  = x$. We have $f\; x \le x$. We will show that $f\;x$ is also a prefix point.
-  From this, since $x$ is the least prefix point, we have $x \le f\;x$ and
-  therefore $f\;x = x$.
+  Let $x$ be a least decreasing point. Consider any $f \in P$. We wish to show
+  $f\;x = x$. We have $f\; x \le x$. We will show that $f\;x$ is also a
+  decreasing point. From this, since $x$ is the least decreasing point, we have
+  $x \le f\;x$ and therefore $f\;x = x$.
 
   Consider any $g \in P$. We wish to show that $g\;(f\;x) \le f\; x$. We have
-  $f\;x \le x$. Monotonically, $g\;(f\;x) \le g\;x$. Since $x$ is a prefix
+  $f\;x \le x$. Monotonically, $g\;(f\;x) \le g\;x$. Since $x$ is a decreasing
   point, $g\;x \le x$. Transitively, $g\;(f\;x) \le x$ as desired.
 \end{proof}
 
-Now we consider the interaction of reachability and prefix-ness:
+Now we consider the interaction of reachability and decreasing-ness:
 
 \begin{theorem}
-  If $x \in \reach{P}$ and $y \in \prefix{P}$ then $x \le y$.
-  \label{thm:reachable<=prefix}
+  If $x \in \reach{P}$ and $y \in \dec{P}$ then $x \le y$.
+  \label{thm:reachable<=dec}
 \end{theorem}
 
 \begin{proof}
   Since $x$ is reachable, $x = \seq{s}\; \bot$. Induct on $\vec{s}$. Base case:
-  $\bot \le y$. Inductive hypothesis: $\seq{t}\; \bot \le y$. To show
-  inductively: $f\; (\seq{t}\; \bot) \le y$ for $f \in P$. By our IH and
-  monotonicity of $f$, $f\;(\seq{t}\; \bot) \le f\; y$. By $y \in \prefix{P}$,
-  $f\;y \le y$. Transitively $f\; (\seq{t}\; \bot) \le y$ as desired.
+  $\bot \le y$. Now inductively consider some $\vec{t}$ such that $\seq{t}\;
+  \bot \le y$ and fix $f \in P$. We wish to show that $f\; (\seq{t}\; \bot) \le
+  y$. By our IH and monotonicity of $f$, $f\;(\seq{t}\; \bot) \le f\; y$. By $y
+  \in \dec{P}$, $f\;y \le y$. Transitively $f\; (\seq{t}\; \bot) \le y$ as
+  desired.
 \end{proof}
 
 \begin{corollary}
@@ -240,7 +254,8 @@ Now we consider the interaction of reachability and prefix-ness:
   \label{cor:consistency}
 \end{corollary}
 
-\todo{Couldn't I prove a more traditional ``confluence'' theorem as well?}
+\todo{Couldn't I prove a perhaps more traditional ``confluence''-style theorem
+  as well?}
 
 \begin{theorem}[Equivalence]
   If $P \simeq Q$ and $P \eval x$ then $Q \eval x$.
@@ -248,25 +263,66 @@ Now we consider the interaction of reachability and prefix-ness:
 \end{theorem}
 
 \begin{proof}
-  Since $x \in \prefix{P}$ and $Q \le P$, by Theorem \ref{thm:prefix-antitone}
-  we know $x \in \prefix{Q}$. So it suffices to show that $x \in \reach{Q}$.
+  Since $x \in \dec{P}$ and $Q \le P$, by Theorem \ref{thm:dec-antitone} we know
+  $x \in \dec{Q}$. So it suffices to show that $x \in \reach{Q}$.
 
   $x = \seq{s}\;\bot$ for some $\vec{s} : P$. So by $P \le Q$ there is some
   $\vec{t} : Q$ such that $\seq{s} \le \seq{t}$ and so $x = \seq{s}\; \bot \le
-  \seq{t}\;\bot$. Since $\seq{t}\;\bot \in \reach{Q}$ and $x \in \prefix{Q}$, by
-  Theorem \ref{thm:reachable<=prefix} we have $\seq{t}\;\bot \le x$. By
-  antisymmetry $x = \seq{t}\;\bot$ and is thus reachable in $Q$.
+  \seq{t}\;\bot$. Since $\seq{t}\;\bot \in \reach{Q}$ and $x \in \dec{Q}$, by
+  Theorem \ref{thm:reachable<=dec} we have $\seq{t}\;\bot \le x$. By
+  antisymmetry $x = \seq{t}\;\bot$ and so $x \in \reach{Q}$.
 \end{proof}
 
-\begin{theorem}[Fairness works]
-  If $P \eval x$ and $S : \N \to P$ is fair, then $S$ has a prefix $\vec{s} =
-  S\;0, S\;1, ..., S\;n$ such that $x = \seq{s}\;\bot$.
-\end{theorem}
-\begin{proof}
-  By Corollary \ref{cor:consistency} it suffices to find a prefix $\vec{s}$ of
-  $S$ such that $\seq{s}\;\bot \in \prefix{P}$.
 
-\todo{TODO}
-\end{proof}
+%% \begin{theorem}
+%%   If $x \in \reach{P}$ and $F : \N \to P$ is fair, then $F$ has a prefix
+%%   $\vec{t}$ such that $x \le \vec{t}$.
+%% \end{theorem}
+%% \begin{proof}
+%%   There is a $\vec{s}$ such that $x = \seq{s}\;\bot$. Then, because $F$ is fair,
+%%   there are some $j_1 < ... < j_n$ such that $\fa{i}{s_i = F\; j_i}$. Let
+%%   $\vec{t} = F\;0, ..., F\;j_n$ be the prefix of $F$ ending at $j_n$.
+
+%%   We induct on $\vec{s}$ to show $\seq{s}\;\bot \le \seq{t}\;\bot$. Base case:
+%%   $\bot \le \bot$. Inductively consider some $\vec{s}$ of length $k$ such that
+%%   $\seq{s}\;\bot \le F\;j_k\;(...\; (F\; 1\; (F\; 0\; \bot))...)$. Fix $f \in P$. We wish to show that $f\; (\seq{s}\; \bot) \le $
+
+%%   \todo{I'm not even convinced this is true anymore! Try to find a
+%%     counterexample!}
+%% \end{proof}
+
+For proving that fair schedulings can find reachable fixed points if they exist,
+I thought to use the following:
+
+\begin{nontheorem}
+  If $x \in \reach{P}$ and $F : \N \to P$ is fair, then $F$ has a prefix
+  $\vec{t}$ such that $x \le \vec{t}$.
+\end{nontheorem}
+
+But this turns out to be false:
+
+\begin{refutation}
+  Let $S$ be finite binary strings, ordered $x \le y$ iff $x$ is a prefix of
+  $y$. Let $P = \{\text{append }0, \text{append }1\}$. Then schedules correspond
+  precisely with infinite binary strings. But there is no infinite binary string
+  such that all finite binary strings are prefixes of it.
+
+  (In this case fair schedules happen to correspond with infinite binary strings
+  which have infinitely many 0s and infinitely many 1s. But fairness turns out
+  to be a red herring here.)
+\end{refutation}
+
+%% \begin{corollary}[Fairness works]
+%%   If $P \eval x$ and $S : \N \to P$ is fair, then $S$ has a prefix $\vec{s} =
+%%   S\;0, S\;1, ..., S\;n$ such that $x = \seq{s}\;\bot$.
+%% \end{corollary}
+
+%% \begin{proof}
+%%   It suffices to find a prefix $\vec{s}$ of $S$ such that $x \le \seq{s}\;\bot$;
+%%   for then by Theorem \ref{thm:reachable<=dec} we have $\seq{s}\;\bot \le x$
+%%   and so $x = \seq{s}\;\bot$.
+
+%%   \todo{TODO}
+%% \end{proof}
 
 \end{document}
