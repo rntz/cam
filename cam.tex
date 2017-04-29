@@ -74,17 +74,39 @@ most importantly monotonicity, we ensure eventual consistency or determinism.
 
 
 \section{Less abstract}
+\label{sec:less-abstract}
 
 A program $P$ is a set of monotone maps on a poset $S$ of program states with a
 least element (initial state) $\bot$. A state is ``fixed'' if it is a fixed
-point of every function in $P$. A scheduling of a program is an infinite
-sequence of elements of $P$. A scheduling is fair if it visits every $f \in P$
-infinitely often. I show that a program either:
+point of every function in $P$. A schedule is an infinite sequence of elements
+of $P$. A schedule is fair if it visits every $f \in P$ infinitely often. A
+schedule terminates if it has a prefix that reaches a fixed state. I show that a
+program either:
 
 \begin{enumerate}
-\item Diverges: no scheduling reaches a fixed state.
-\item Converges: every fair scheduling reaches the same fixed state.
+\item Diverges: no schedules terminate.
+\item Converges: all fair schedules terminate, and all terminating schedules
+  reach the same fixed state.
 \end{enumerate}
+
+
+\section{Example: Monotone dataflow}
+
+Here I show how a slightly more concrete model of computation --- monotone
+dataflow --- can be represented in this framework.
+
+A monotone dataflow program is a finite, directed, possibly cyclic graph $G =
+(V,E)$. Nodes $f \in V$ are monotone functions of 0 or more arguments. $f$'s
+in-edges correspond to its arguments. Each edge $e \in E$ has a type, which is a
+poset with a least element. This type must agree with the result type of its
+source and with the argument type of its destination. A program state is a
+labelling of edges with values of the appropriate types. The initial state
+labels each edge with the least element of its type.
+
+To ``step'' a subset $S$ of nodes, for each $f \in S$ compute $f$ applied to
+the current labels of its in-edges. Then simultaneously update each out-edge of each $f \in S$ with the values thus computed.
+
+\todo{Show how to interpret this in terms of Section \ref{sec:less-abstract}.}
 
 
 \section{Definitions}
@@ -133,7 +155,7 @@ Write $P \eval x$ (``$P$ evaluates to $x$'') for $x \in \reach{P} \cap
 Write $P \diverge$ (``$P$ diverges'') for $\reach{P} \cap \prefix{P} = \emptyset$.
 
 
-\section{Theorems}
+\section{Proofs}
 
 Initially, I conjectured the following:
 
@@ -144,9 +166,9 @@ Initially, I conjectured the following:
 However, this is false:
 
 \begin{refutation}
-  Let $S = \N$ ordered $0 < 1 < 2 < ...$. Let $P = \{id\}$. Let $Q = \{id, (x
-  \mapsto x - 1)\}$, where $0 - 1 = 0$. Then $P \simeq Q$; the only interesting
-  case is $(x \mapsto x - 1) \le id$. Yet $\fixed{P} = \N$, but $\fixed{Q} =
+  Let $S = \N$ ordered $0 < 1 < 2 < ...$. Let $P = \{id\}$. Let $Q = \{id,
+  pred\}$, where $pred\; 0 = 0$ and $pred\; (x+1) = x$. Then $P \simeq Q$; the
+  only interesting case is $pred \le id$. Yet $\fixed{P} = \N$, but $\fixed{Q} =
   \{0\}$.
 \end{refutation}
 
@@ -215,12 +237,14 @@ Now we consider the interaction of reachability and prefix-ness:
 
 \begin{corollary}[Consistency]
   If $P \eval x$ and $P \eval y$ then $x = y$.
+  \label{cor:consistency}
 \end{corollary}
 
 \todo{Couldn't I prove a more traditional ``confluence'' theorem as well?}
 
 \begin{theorem}[Equivalence]
   If $P \simeq Q$ and $P \eval x$ then $Q \eval x$.
+  \label{thm:equivalence}
 \end{theorem}
 
 \begin{proof}
@@ -232,6 +256,17 @@ Now we consider the interaction of reachability and prefix-ness:
   \seq{t}\;\bot$. Since $\seq{t}\;\bot \in \reach{Q}$ and $x \in \prefix{Q}$, by
   Theorem \ref{thm:reachable<=prefix} we have $\seq{t}\;\bot \le x$. By
   antisymmetry $x = \seq{t}\;\bot$ and is thus reachable in $Q$.
+\end{proof}
+
+\begin{theorem}[Fairness works]
+  If $P \eval x$ and $S : \N \to P$ is fair, then $S$ has a prefix $\vec{s} =
+  S\;0, S\;1, ..., S\;n$ such that $x = \seq{s}\;\bot$.
+\end{theorem}
+\begin{proof}
+  By Corollary \ref{cor:consistency} it suffices to find a prefix $\vec{s}$ of
+  $S$ such that $\seq{s}\;\bot \in \prefix{P}$.
+
+\todo{TODO}
 \end{proof}
 
 \end{document}
