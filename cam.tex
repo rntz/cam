@@ -91,6 +91,13 @@ schedule terminates if it has a prefix that reaches a fixed state. I \todo{hope
   reach the same fixed state.
 \end{enumerate}
 
+\todo{TODO: REWRITE: Well, this is false! All fair schedules do not necessarily
+  terminate! However, all terminating schedules DO reach the same fixed state.}
+
+\todo{nwf mentions that the question of whether a ``random'' schedule finds a
+  reachable fixed point (assuming one exists) with probability 1 reminds him of
+  Markov mixing time.}
+
 
 \section{Example: Monotone dataflow}
 
@@ -130,8 +137,8 @@ Fix $S$, a partially ordered set with a least element $\bot$.
 
 $\vec{s} : P$ means $\vec{s}$ is a finite sequence such that $\fa{i} s_i \in P$.
 
-%% \newcommand{\seq}[1]{{\vec{#1}_*}}
-\newcommand{\seq}[1]{{\bullet\vec{#1}}}
+\newcommand{\seq}[1]{{\vec{#1}_*}}
+%% \newcommand{\seq}[1]{{\bullet\vec{#1}}}
 
 Given a sequence $\vec{f} = f_0, ..., f_n$, let $\seq{f} = f_n \circ f_{n-1}
 \circ ... \circ f_1 \circ f_0$.
@@ -150,10 +157,13 @@ P \simeq Q &\text{iff}& P \le Q \wedge Q \le P
 \todo{Could I instead (or additionally) consider sets closed under composition
   and identity? Hm...}
 
-\newcommand{\dec}[1]{\ensuremath{{#1}_{\text{dec}}}}
-\newcommand{\inc}[1]{\ensuremath{{#1}_{\text{inc}}}}
-\newcommand{\fixed}[1]{\ensuremath{{#1}_{\text{fix}}}}
-\newcommand{\reach}[1]{\ensuremath{{#1}_{\text{reach}}}}
+\newcommand{\pt}[2]{\ensuremath{\ms{{#1}}_{#2}}}
+
+%% \newcommand{\dec}[1]{\ensuremath{{#1}_{\text{dec}}}}
+\newcommand{\dec}{\pt{dec}}
+\newcommand{\inc}{\pt{inc}}
+\newcommand{\fixed}{\pt{fixed}}
+\newcommand{\reach}{\pt{reachable}}
 %% I'm not sure what the * in newcommand* does.
 \newcommand*{\defeq}{\stackrel{\text{def}}{=}}
 
@@ -161,17 +171,17 @@ Given a program $P$, we define the following subsets of $S$:
 \[
 \begin{array}{ccccc}
   x \in \reach{P}
-  &\multirow{4}{*}{\text{iff}}& \te{\vec{s} : P} x = \seq{s}\;\bot
-  &\multirow{4}{*}{which is read}&\text{``$x$ is reachable''}\\
+  &\multirow{3}{*}{\text{iff}}& \te{\vec{s} : P} x = \seq{s}\;\bot
+  &\multirow{3}{*}{which is read}&\text{``$x$ is reachable''}\\
   x \in \dec{P} && \fa{f \in P}{f\;x \le x} && \text{``$x$ is decreasing''}\\
-  x \in \inc{P} && \fa{f \in P}{f\;x \ge x} && \text{``$x$ is increasing''}\\
+  %% x \in \inc{P} && \fa{f \in P}{f\;x \ge x} && \text{``$x$ is increasing''}\\
   x \in \fixed{P} && \fa{f \in P}{f\;x = x} && \text{``$x$ is fixed''}
 \end{array}
 \]
 
-\todo{Do we need to consider increasing points?}
+%% \todo{Do we need to consider increasing points?}
 
-Note that $\fixed{P} = \dec{P} \cap \inc{P}$.
+Note that $\fixed{P} \subseteq \dec{P}$.
 
 \newcommand{\eval}{\Downarrow}
 \newcommand{\diverge}{\not\eval}
@@ -270,7 +280,7 @@ Now we consider the interaction of reachability and decreasing-ness:
 \todo{Couldn't I prove a perhaps more traditional ``confluence''-style theorem
   as well?}
 
-\begin{theorem}[Equivalence]
+\begin{theorem}[Evaluation respects equivalence]
   If $P \simeq Q$ and $P \eval x$ then $Q \eval x$.
   \label{thm:equivalence}
 \end{theorem}
@@ -285,24 +295,6 @@ Now we consider the interaction of reachability and decreasing-ness:
   Theorem \ref{thm:reachable<=dec} we have $\seq{t}\;\bot \le x$. By
   antisymmetry $x = \seq{t}\;\bot$ and so $x \in \reach{Q}$.
 \end{proof}
-
-
-%% \begin{theorem}
-%%   If $x \in \reach{P}$ and $F : \N \to P$ is fair, then $F$ has a prefix
-%%   $\vec{t}$ such that $x \le \vec{t}$.
-%% \end{theorem}
-%% \begin{proof}
-%%   There is a $\vec{s}$ such that $x = \seq{s}\;\bot$. Then, because $F$ is fair,
-%%   there are some $j_1 < ... < j_n$ such that $\fa{i}{s_i = F\; j_i}$. Let
-%%   $\vec{t} = F\;0, ..., F\;j_n$ be the prefix of $F$ ending at $j_n$.
-
-%%   We induct on $\vec{s}$ to show $\seq{s}\;\bot \le \seq{t}\;\bot$. Base case:
-%%   $\bot \le \bot$. Inductively consider some $\vec{s}$ of length $k$ such that
-%%   $\seq{s}\;\bot \le F\;j_k\;(...\; (F\; 1\; (F\; 0\; \bot))...)$. Fix $f \in P$. We wish to show that $f\; (\seq{s}\; \bot) \le $
-
-%%   \todo{I'm not even convinced this is true anymore! Try to find a
-%%     counterexample!}
-%% \end{proof}
 
 For proving that fair schedulings can find reachable fixed points if they exist,
 I thought to use the following:
@@ -325,10 +317,37 @@ But this turns out to be false:
   to be a red herring here.)
 \end{refutation}
 
-%% \begin{corollary}[Fairness works]
-%%   If $P \eval x$ and $S : \N \to P$ is fair, then $S$ has a prefix $\vec{s} =
-%%   S\;0, S\;1, ..., S\;n$ such that $x = \seq{s}\;\bot$.
-%% \end{corollary}
+Indeed, fairness is just not sufficient:
+
+\begin{nontheorem}
+  If $P \eval x$ and $S : \N \to P$ is fair, then $S$ has a prefix $\vec{s} =
+  S\;0, S\;1, ..., S\;n$ such that $x = \seq{s}\;\bot$.
+\end{nontheorem}
+
+\begin{refutation}
+  Let $S = \N$. Let $P = \{f,g\}$ where:
+  \[
+  \begin{array}{rcl}
+    f\; x &=& 
+    \begin{cases}
+      0 & \text{if }x \le 10\\
+      x & \text{otherwise}
+    \end{cases}\\
+    g\; x &=&
+    \begin{cases}
+      x+1 & \text{if}~x \le 10\\
+      x   & \text{otherwise}
+    \end{cases}
+  \end{array}
+  \]
+
+  Then $\reach{P} = [0..10]$ and $\fixed{P} = \{10\}$, but the fair round-robin
+  scheduling $f,g,f,g,f,g,...$ never reaches any number larger than 1.
+\end{refutation}
+
+What we're seeing here is a failure of monotonicity to produce increasingness.
+In the case of a single function it works; when generalized to a
+nondeterministic choice among functions, it fails. Argh.
 
 %% \begin{proof}
 %%   It suffices to find a prefix $\vec{s}$ of $S$ such that $x \le \seq{s}\;\bot$;
